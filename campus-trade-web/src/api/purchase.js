@@ -34,3 +34,8 @@ export function getMyRequests(params) {
 export function getRequestMatches(requestId) {
   return request.get('/purchase/matches/' + requestId)
 }
+
+// 删除求购
+export function deleteRequest(id) {
+  return request.delete('/purchase/' + id)
+}

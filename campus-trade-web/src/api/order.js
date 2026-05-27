@@ -44,3 +44,20 @@ export const cancelOrder = (id, reason) => {
     params: { reason }
   })
 }
+
+// 提交评价
+export const submitReview = (data) => {
+  return request({
+    url: '/review/submit',
+    method: 'post',
+    data
+  })
+}
+
+// 获取订单评价
+export const getOrderReviews = (orderId) => {
+  return request({
+    url: `/review/order/${orderId}`,
+    method: 'get'
+  })
+}

@@ -67,17 +67,14 @@
             <div class="form-group">
               <label>分类</label>
               <select v-model="productForm.categoryId" required>
-                <option :value="5">教材</option>
-                <option :value="6">考研资料</option>
-                <option :value="7">文具</option>
-                <option :value="8">笔记</option>
-                <option :value="9">日用品</option>
-                <option :value="10">装饰品</option>
-                <option :value="11">运动器材</option>
-                <option :value="12">手机</option>
-                <option :value="13">电脑</option>
-                <option :value="14">平板</option>
-                <option :value="15">配件</option>
+                <option :value="1">数码电子</option>
+                <option :value="2">书籍教材</option>
+                <option :value="3">服饰鞋包</option>
+                <option :value="4">生活用品</option>
+                <option :value="5">运动健身</option>
+                <option :value="6">美妆护肤</option>
+                <option :value="7">食品零食</option>
+                <option :value="8">其他</option>
               </select>
             </div>
           </div>
@@ -120,13 +117,72 @@ https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400,https://images.u
           </div>
         </div>
       </div>
+      <div v-if="currentTab === 'salesHistory'" class="sales-history">
+        <h3>历史销售记录</h3>
+        <div v-if="publicProfileLoading" class="loading">加载中...</div>
+        <div v-else-if="publicProfile && publicProfile.salesRecords && publicProfile.salesRecords.length > 0" class="sales-list">
+          <div v-for="record in publicProfile.salesRecords" :key="record.orderId" class="sales-card clickable" @click="showReviewForSales(record)">
+            <img :src="getFirstImage(record.productImages)" alt="record.productTitle">
+            <div class="sales-info">
+              <h4>{{ record.productTitle }}</h4>
+              <p class="price">{{ record.price }} 元</p>
+              <p class="time">{{ formatTime(record.createdTime) }}</p>
+              <span v-if="record.hasReview" class="reviewed-badge">已评价</span>
+              <span v-else class="review-tip">点击评价</span>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty-tip">暂无销售记录</div>
+      </div>
+    </div>
+
+    <!-- 评价弹窗 -->
+    <div v-if="showReviewModal" class="modal-overlay" @click.self="closeReviewModal">
+      <div class="modal-content">
+        <h3>评价本次交易</h3>
+        <div class="review-product-info">
+          <img :src="getFirstImage(reviewTarget.productImages)" alt="">
+          <div>
+            <h4>{{ reviewTarget.productTitle }}</h4>
+            <p>{{ reviewTarget.price }} 元</p>
+          </div>
+        </div>
+        <div class="review-form">
+          <div class="review-section">
+            <h4>选择评价</h4>
+            <div class="rating-type">
+              <label>
+                <input type="radio" v-model="reviewForm.type" :value="1">
+                <span class="rating-option good">好评</span>
+              </label>
+              <label>
+                <input type="radio" v-model="reviewForm.type" :value="2">
+                <span class="rating-option neutral">中评</span>
+              </label>
+              <label>
+                <input type="radio" v-model="reviewForm.type" :value="3">
+                <span class="rating-option bad">差评</span>
+              </label>
+            </div>
+          </div>
+          <div class="review-section">
+            <h4>评价内容</h4>
+            <textarea v-model="reviewForm.content" placeholder="请对商品和商家进行评价..." rows="4"></textarea>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="closeReviewModal">取消</button>
+          <button class="btn-confirm" @click="submitReview" :disabled="submitting">提交评价</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { getCurrentUser, logout } from '../api/auth'
+import { getCurrentUser, logout, getPublicProfile } from '../api/auth'
 import { publishProduct, getMyProducts, offlineProduct } from '../api/product'
+import { submitReview } from '../api/order'
 
 export default {
   name: 'Profile',
@@ -139,8 +195,18 @@ export default {
       tabs: [
         { key: 'info', label: '个人信息' },
         { key: 'publish', label: '发布商品' },
-        { key: 'myProducts', label: '我的商品' }
+        { key: 'myProducts', label: '我的商品' },
+        { key: 'salesHistory', label: '销售记录' }
       ],
+      publicProfile: null,
+      publicProfileLoading: false,
+      showReviewModal: false,
+      reviewTarget: {},
+      submitting: false,
+      reviewForm: {
+        type: 1,
+        content: ''
+      },
       productForm: {
         title: '',
         description: '',
@@ -162,6 +228,9 @@ export default {
     currentTab(newVal) {
       if (newVal === 'myProducts') {
         this.fetchMyProducts()
+      }
+      if (newVal === 'salesHistory' || newVal === 'myReviews') {
+        this.fetchPublicProfile()
       }
     }
   },
@@ -273,6 +342,64 @@ export default {
         3: '认证失败'
       }
       return statusMap[status] || '未知'
+    },
+    async fetchPublicProfile() {
+      if (!this.user || !this.user.id) return
+      this.publicProfileLoading = true
+      try {
+        const res = await getPublicProfile(this.user.id)
+        if (res.code === 200) {
+          this.publicProfile = res.data
+        }
+      } catch (error) {
+        console.error('获取公开资料失败:', error)
+      } finally {
+        this.publicProfileLoading = false
+      }
+    },
+    formatTime(time) {
+      if (!time) return ''
+      return new Date(time).toLocaleDateString('zh-CN')
+    },
+    getReviewTypeText(type) {
+      const map = { 1: '好评', 2: '中评', 3: '差评' }
+      return map[type] || '评价'
+    },
+    showReviewForSales(record) {
+      this.reviewTarget = record
+      this.reviewForm = {
+        type: 1,
+        content: ''
+      }
+      this.showReviewModal = true
+    },
+    closeReviewModal() {
+      this.showReviewModal = false
+      this.reviewTarget = {}
+    },
+    async submitReview() {
+      if (!this.reviewTarget || !this.reviewTarget.orderId) return
+      
+      this.submitting = true
+      try {
+        const res = await submitReview({
+          orderId: this.reviewTarget.orderId,
+          type: this.reviewForm.type,
+          content: this.reviewForm.content
+        })
+        if (res.code === 200) {
+          alert('评价成功！')
+          this.closeReviewModal()
+          this.fetchPublicProfile()
+        } else {
+          alert(res.message || '评价失败')
+        }
+      } catch (error) {
+        console.error('评价失败:', error)
+        alert('评价失败，请重试')
+      } finally {
+        this.submitting = false
+      }
     }
   }
 }
@@ -282,6 +409,17 @@ export default {
 .profile {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 20px;
+  color: #333;
+}
+
+.profile h2 {
+  color: #333;
+}
+
+.profile h3 {
+  color: #333;
+  margin: 0 0 15px 0;
 }
 
 .loading {
@@ -310,6 +448,7 @@ export default {
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
+  color: #666;
 }
 
 .tab-button.active {
@@ -326,12 +465,23 @@ export default {
   border: 1px solid #ddd;
   border-radius: 5px;
   padding: 20px;
+  color: #333;
+}
+
+.profile-info p {
+  color: #333;
+  margin: 10px 0;
 }
 
 .publish-section {
   border: 1px solid #ddd;
   border-radius: 5px;
   padding: 20px;
+  color: #333;
+}
+
+.publish-section label {
+  color: #333;
 }
 
 .publish-form {
@@ -371,6 +521,7 @@ export default {
   padding: 8px;
   border: 1px solid #ddd;
   border-radius: 3px;
+  color: #333;
 }
 
 .form-actions {
@@ -390,6 +541,7 @@ export default {
   border: 1px solid #ddd;
   border-radius: 5px;
   padding: 20px;
+  color: #333;
 }
 
 .product-list {
@@ -453,5 +605,248 @@ export default {
   border: none;
   border-radius: 3px;
   cursor: pointer;
+}
+
+/* 销售记录样式 */
+.sales-history {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 20px;
+}
+
+.sales-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.sales-card {
+  border: 1px solid #eee;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.sales-card.clickable {
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.sales-card.clickable:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.sales-card img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+}
+
+.sales-info {
+  padding: 10px;
+  position: relative;
+}
+
+.sales-info h4 {
+  margin: 0 0 5px 0;
+  font-size: 14px;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sales-info .price {
+  color: #ff4d4f;
+  font-weight: bold;
+  margin: 5px 0;
+}
+
+.sales-info .time {
+  color: #666;
+  font-size: 12px;
+  margin: 5px 0 0 0;
+}
+
+.review-tip {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 8px;
+  background: #1890ff;
+  color: #fff;
+  font-size: 11px;
+  border-radius: 10px;
+}
+
+.review-tip:hover {
+  background: #40a9ff;
+}
+
+.reviewed-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 8px;
+  background: #52c41a;
+  color: #fff;
+  font-size: 11px;
+  border-radius: 10px;
+}
+
+/* 评价弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  width: 450px;
+  max-width: 90vw;
+}
+
+.modal-content h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.review-product-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.review-product-info img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.review-product-info h4 {
+  margin: 0 0 5px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.review-product-info p {
+  margin: 0;
+  color: #ff4d4f;
+  font-weight: bold;
+}
+
+.review-form {
+  margin-bottom: 20px;
+}
+
+.review-section {
+  margin-bottom: 20px;
+}
+
+.review-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  color: #333;
+}
+
+.rating-type {
+  display: flex;
+  gap: 15px;
+}
+
+.rating-type label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.rating-type input {
+  display: none;
+}
+
+.rating-option {
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  transition: all 0.2s;
+}
+
+.rating-type input:checked + .rating-option.good {
+  background: #e8f5e9;
+  border-color: #42b983;
+  color: #2e7d32;
+}
+
+.rating-type input:checked + .rating-option.neutral {
+  background: #fff3e0;
+  border-color: #ff9800;
+  color: #e65100;
+}
+
+.rating-type input:checked + .rating-option.bad {
+  background: #ffebee;
+  border-color: #ef5350;
+  color: #c62828;
+}
+
+.review-section textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  resize: none;
+  font-size: 14px;
+  color: #333;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn-cancel {
+  padding: 8px 20px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #333;
+}
+
+.btn-confirm {
+  padding: 8px 20px;
+  background: #42b983;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-confirm:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.empty-tip {
+  text-align: center;
+  padding: 40px;
+  color: #666;
 }
 </style>

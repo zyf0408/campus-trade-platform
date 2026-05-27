@@ -29,3 +29,10 @@ export const getCurrentUser = () => {
     method: 'get'
   })
 }
+
+export const getPublicProfile = (userId) => {
+  return request({
+    url: `/auth/public-profile/${userId}`,
+    method: 'get'
+  })
+}

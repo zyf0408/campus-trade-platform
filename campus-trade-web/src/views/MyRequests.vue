@@ -92,7 +92,7 @@
 
 <script>
 import { ref, computed, watch } from 'vue'
-import { getMyRequests, offlineRequest } from '../api/purchase.js'
+import { getMyRequests, offlineRequest, deleteRequest } from '../api/purchase.js'
 import PublishRequest from '../components/PublishRequest.vue'
 import RequestDetail from '../components/RequestDetail.vue'
 
@@ -182,8 +182,18 @@ export default {
 
     const handleDelete = async (request) => {
       if (!confirm('确认删除该求购？删除后无法恢复。')) return
-      // 这里需要后端提供删除接口，暂时用下架代替
-      alert('删除功能开发中')
+      try {
+        const res = await deleteRequest(request.id)
+        if (res.code === 200) {
+          alert('删除成功')
+          fetchRequests()
+        } else {
+          alert(res.message || '删除失败')
+        }
+      } catch (error) {
+        console.error('删除失败:', error)
+        alert('删除失败')
+      }
     }
 
     const handlePublishSuccess = () => {

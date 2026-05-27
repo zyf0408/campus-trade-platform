@@ -59,14 +59,14 @@
         <div class="detail-section">
           <h4>买家信息</h4>
           <div class="buyer-info">
-            <div class="buyer-avatar">
+            <div class="buyer-avatar" :class="{ clickable: isLoggedIn && request.userId !== currentUserId }" @click="handleAddFriend">
               <img :src="request.buyerAvatar || 'https://picsum.photos/seed/user' + request.userId + '/100/100'" alt="">
+              <span v-if="isLoggedIn && request.userId !== currentUserId" class="avatar-add-tip">+好友</span>
             </div>
             <div class="buyer-detail">
               <div class="buyer-name">{{ request.buyerNickname || '匿名用户' }}</div>
               <div class="buyer-meta">
                 <span v-if="request.buyerCreditScore">信誉分: {{ request.buyerCreditScore }}</span>
-                <span>用户ID: {{ request.userId }}</span>
               </div>
             </div>
           </div>
@@ -104,6 +104,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getRequestMatches } from '../api/purchase.js'
+import { sendFriendRequest } from '../api/friend.js'
 
 export default {
   name: 'RequestDetail',
@@ -155,6 +156,30 @@ export default {
       emit('contact', props.request)
     }
 
+    const handleAddFriend = async () => {
+      if (!isLoggedIn.value) {
+        alert('请先登录')
+        router.push('/login')
+        return
+      }
+      if (props.request.userId === currentUserId.value) return
+
+      const message = prompt('请输入好友申请消息（选填）：')
+      if (message === null) return // 用户点了取消
+
+      try {
+        const res = await sendFriendRequest(props.request.userId, message)
+        if (res.code === 200) {
+          alert(res.message || '好友申请已发送')
+        } else {
+          alert(res.message || '发送失败')
+        }
+      } catch (error) {
+        console.error('发送好友申请失败:', error)
+        alert('发送失败，请重试')
+      }
+    }
+
     const viewProduct = (product) => {
       router.push('/product/' + product.id)
       emit('close')
@@ -204,6 +229,7 @@ export default {
       currentUserId,
       keywordList,
       handleContact,
+      handleAddFriend,
       viewProduct,
       formatBudget,
       formatTime,
@@ -381,6 +407,7 @@ export default {
 .buyer-avatar {
   width: 50px;
   height: 50px;
+  position: relative;
 }
 
 .buyer-avatar img {
@@ -388,6 +415,31 @@ export default {
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+}
+
+.buyer-avatar.clickable {
+  cursor: pointer;
+}
+
+.buyer-avatar.clickable:hover img {
+  opacity: 0.6;
+}
+
+.buyer-avatar.clickable:hover .avatar-add-tip {
+  opacity: 1;
+}
+
+.avatar-add-tip {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: #42b983;
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 8px;
+  opacity: 0.8;
+  pointer-events: none;
 }
 
 .buyer-name {

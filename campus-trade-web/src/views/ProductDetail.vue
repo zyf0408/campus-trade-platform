@@ -19,22 +19,48 @@
         <p class="price">{{ product.price }} 元</p>
         <p class="original-price" v-if="product.originalPrice">原价: {{ product.originalPrice }} 元</p>
         <p class="description">{{ product.description }}</p>
-        <p class="seller">卖家: {{ product.sellerNickname }}</p>
+        <p class="seller">
+          卖家: <router-link :to="`/user/${product.userId}`" class="seller-link">
+            {{ product.sellerNickname }}
+          </router-link>
+        </p>
         <p class="created-at">发布时间: {{ product.createdTime }}</p>
         <p class="pickup" v-if="product.pickupLocation">自提点: {{ product.pickupLocation }}</p>
         <div class="buttons">
           <button @click="handleBuy" class="buy-button">立即购买</button>
           <button @click="handleChat" class="chat-button">联系卖家</button>
+          <button @click="handleFavorite" :class="['favorite-button', { active: isFavorite }]">
+            {{ isFavorite ? '❤️ 已收藏' : '🤍 收藏' }}
+          </button>
         </div>
       </div>
     </div>
     <div v-else class="loading">加载中...</div>
+
+    <!-- 相似商品推荐 -->
+    <div v-if="similarProducts.length > 0" class="similar-products">
+      <h3>相似推荐</h3>
+      <div class="similar-list">
+        <div v-for="item in similarProducts" :key="item.id" class="similar-item">
+          <router-link :to="`/product/${item.id}`">
+            <img :src="getFirstImage(item.images)" alt="item.title" class="similar-image">
+          </router-link>
+          <div class="similar-info">
+            <router-link :to="`/product/${item.id}`" class="similar-title">
+              {{ item.title }}
+            </router-link>
+            <p class="similar-price">{{ item.price }} 元</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import { getProductById } from '../api/product'
 import { createOrder } from '../api/order'
+import { addFavorite, removeFavorite, checkIsFavorite } from '../api/favorite'
 
 export default {
   name: 'ProductDetail',
@@ -42,7 +68,9 @@ export default {
     return {
       product: null,
       currentImageIndex: 0,
-      imageList: []
+      imageList: [],
+      isFavorite: false,
+      similarProducts: []
     }
   },
   computed: {
@@ -52,6 +80,16 @@ export default {
   },
   mounted() {
     this.fetchProductDetail()
+  },
+  watch: {
+    product: {
+      handler(newVal) {
+        if (newVal && newVal.id) {
+          this.checkFavorite()
+        }
+      },
+      immediate: true
+    }
   },
   methods: {
     async fetchProductDetail() {
@@ -72,8 +110,34 @@ export default {
         if (!this.imageList || this.imageList.length === 0) {
           this.imageList = ['https://via.placeholder.com/400']
         }
+        // 获取相似商品推荐
+        this.fetchSimilarProducts()
       } catch (error) {
         console.error('获取商品详情失败:', error)
+      }
+    },
+    async fetchSimilarProducts() {
+      try {
+        // 基于商品分类或关键词搜索相似商品
+        const params = {}
+        if (this.product.categoryId) {
+          params.categoryId = this.product.categoryId
+        }
+        if (this.product.title) {
+          // 提取标题关键词
+          const keywords = this.product.title.split(/[\s,，]+/).slice(0, 2)
+          params.keyword = keywords.join(' ')
+        }
+        const res = await getProducts(params)
+        if (res.code === 200) {
+          let allProducts = res.data.records || res.data || []
+          // 过滤掉当前商品
+          this.similarProducts = allProducts
+            .filter(p => p.id !== this.product.id)
+            .slice(0, 4)
+        }
+      } catch (error) {
+        console.error('获取相似商品失败:', error)
       }
     },
     async handleBuy() {
@@ -107,6 +171,42 @@ export default {
           productId: this.product.id
         }
       })
+    },
+    async checkFavorite() {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      try {
+        const res = await checkIsFavorite(this.product.id)
+        if (res.code === 200) {
+          this.isFavorite = res.data
+        }
+      } catch (error) {
+        console.error('检查收藏状态失败:', error)
+      }
+    },
+    async handleFavorite() {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        alert('请先登录')
+        this.$router.push('/login')
+        return
+      }
+
+      try {
+        if (this.isFavorite) {
+          await removeFavorite(this.product.id)
+          this.isFavorite = false
+          alert('已取消收藏')
+        } else {
+          await addFavorite(this.product.id)
+          this.isFavorite = true
+          alert('收藏成功')
+        }
+      } catch (error) {
+        console.error('收藏操作失败:', error)
+        alert('操作失败，请重试')
+      }
     }
   }
 }
@@ -181,6 +281,15 @@ export default {
   margin: 10px 0;
 }
 
+.seller-link {
+  color: #42b983;
+  text-decoration: none;
+}
+
+.seller-link:hover {
+  text-decoration: underline;
+}
+
 .buttons {
   margin-top: 20px;
 }
@@ -204,6 +313,78 @@ export default {
   color: white;
 }
 
+.favorite-button {
+  background-color: #fff;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.favorite-button.active {
+  color: #ff4d4f;
+  border-color: #ff4d4f;
+}
+
+/* 相似商品推荐 */
+.similar-products {
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 1px solid #eee;
+}
+
+.similar-products h3 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.similar-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.similar-item {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.similar-item:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.similar-image {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.similar-info {
+  padding: 10px;
+}
+
+.similar-title {
+  color: #333;
+  text-decoration: none;
+  font-size: 14px;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.similar-title:hover {
+  color: #42b983;
+}
+
+.similar-price {
+  color: #ff4d4f;
+  font-weight: bold;
+  margin: 5px 0 0 0;
+  font-size: 14px;
+}
+</style>
 .loading {
   text-align: center;
   margin: 50px 0;

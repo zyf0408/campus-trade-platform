@@ -77,7 +77,15 @@
 
           <div class="request-footer">
             <div class="buyer-info">
-              <span class="buyer">👤 {{ request.buyerNickname || '匿名用户' }}</span>
+              <span 
+                class="buyer-avatar-wrapper"
+                :class="{ clickable: isLoggedIn && request.userId !== currentUserId }"
+                @click.stop="handleAddFriend(request)"
+              >
+                <img class="buyer-avatar-img" :src="'https://picsum.photos/seed/user' + request.userId + '/100/100'" alt="">
+                <span v-if="isLoggedIn && request.userId !== currentUserId" class="avatar-add-tip">+好友</span>
+              </span>
+              <span class="buyer">{{ request.buyerNickname || '匿名用户' }}</span>
               <span class="credit" v-if="request.buyerCreditScore">
                 信誉分: {{ request.buyerCreditScore }}
               </span>
@@ -137,6 +145,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getRequestList } from '../api/purchase.js'
+import { sendFriendRequest } from '../api/friend.js'
 import PublishRequest from '../components/PublishRequest.vue'
 import RequestDetail from '../components/RequestDetail.vue'
 
@@ -219,6 +228,30 @@ export default {
       router.push({ path: '/chat', query: { sellerId: request.userId } })
     }
 
+    const handleAddFriend = async (request) => {
+      if (!isLoggedIn.value) {
+        alert('请先登录')
+        router.push('/login')
+        return
+      }
+      if (request.userId === currentUserId.value) return
+
+      const message = prompt('请输入好友申请消息（选填）：')
+      if (message === null) return
+
+      try {
+        const res = await sendFriendRequest(request.userId, message)
+        if (res.code === 200) {
+          alert(res.message || '好友申请已发送')
+        } else {
+          alert(res.message || '发送失败')
+        }
+      } catch (error) {
+        console.error('发送好友申请失败:', error)
+        alert('发送失败，请重试')
+      }
+    }
+
     const handlePublishSuccess = () => {
       showPublishModal.value = false
       fetchRequests()
@@ -266,6 +299,7 @@ export default {
       changePage,
       viewDetail,
       contactBuyer,
+      handleAddFriend,
       handlePublishSuccess,
       formatBudget,
       formatTime,
@@ -435,9 +469,51 @@ export default {
 
 .buyer-info {
   display: flex;
-  gap: 15px;
+  gap: 10px;
+  align-items: center;
   font-size: 13px;
   color: #666;
+}
+
+.buyer-avatar-wrapper {
+  display: inline-flex;
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.buyer-avatar-wrapper img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.buyer-avatar-wrapper.clickable {
+  cursor: pointer;
+}
+
+.buyer-avatar-wrapper.clickable:hover img {
+  opacity: 0.6;
+}
+
+.buyer-avatar-wrapper.clickable:hover .avatar-add-tip {
+  opacity: 1;
+}
+
+.avatar-add-tip {
+  position: absolute;
+  bottom: -3px;
+  right: -6px;
+  background: #42b983;
+  color: #fff;
+  font-size: 9px;
+  padding: 0 3px;
+  border-radius: 6px;
+  opacity: 0.8;
+  pointer-events: none;
+  line-height: 14px;
 }
 
 .credit {

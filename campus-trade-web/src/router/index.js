@@ -11,7 +11,10 @@ const routes = [
   { path: '/chat',       name: 'Chat',         component: () => import('../views/Chat.vue') },
   { path: '/friends',    name: 'Friends',       component: () => import('../views/Friends.vue') },
   { path: '/requests',   name: 'PurchaseRequests', component: () => import('../views/PurchaseRequests.vue') },
-  { path: '/my-requests', name: 'MyRequests',    component: () => import('../views/MyRequests.vue') }
+  { path: '/my-requests', name: 'MyRequests',    component: () => import('../views/MyRequests.vue') },
+  { path: '/favorites',  name: 'Favorites',     component: () => import('../views/Favorites.vue') },
+  { path: '/user/:id',   name: 'UserProfile',   component: () => import('../views/UserProfile.vue') },
+  { path: '/notifications', name: 'Notifications', component: () => import('../views/Notifications.vue') }
 ]
 
 const router = createRouter({
