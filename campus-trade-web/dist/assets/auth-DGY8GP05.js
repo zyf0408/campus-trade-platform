@@ -1,1 +1,0 @@
-import{t as e}from"./request-CIj01hU-.js";var t=t=>e({url:`/auth/login`,method:`post`,data:t}),n=t=>e({url:`/auth/register`,method:`post`,data:t}),r=()=>e({url:`/auth/logout`,method:`post`}),i=()=>e({url:`/auth/me`,method:`get`});export{n as i,t as n,r,i as t};

@@ -1,1 +1,0 @@
-import{t as e}from"./request-CIj01hU-.js";var t=t=>e({url:`/products`,method:`get`,params:t}),n=t=>e({url:`/products/${t}`,method:`get`});export{t as n,n as t};
