@@ -2,9 +2,9 @@
 
 > 基于 Spring Boot + Vue3 的校园二手交易平台，支持商品发布、在线聊天、订单管理、信誉评价等功能。
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7.18-green.svg)
-![Vue](https://img.shields.io/badge/Vue-3.4.21-brightgreen.svg)
+[License](https://img.shields.io/badge/license-MIT-blue.svg)
+[Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7.18-green.svg)
+[Vue](https://img.shields.io/badge/Vue-3.4.21-brightgreen.svg)
 
 ## ✨ 功能特性
 

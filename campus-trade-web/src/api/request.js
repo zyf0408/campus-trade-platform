@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const request = axios.create({
-  baseURL: '/api',
+  baseURL: 'http://localhost:8081/api',
   timeout: 10000
 })
 
@@ -27,6 +27,21 @@ request.interceptors.response.use(
   },
   error => {
     console.error('请求错误:', error)
+    
+    // 处理 401 未授权错误
+    if (error.response && error.response.status === 401) {
+      // 清除本地存储的登录信息
+      localStorage.removeItem('token')
+      localStorage.removeItem('userId')
+      localStorage.removeItem('username')
+      
+      // 提示用户重新登录
+      alert('登录已过期，请重新登录')
+      
+      // 跳转到登录页
+      window.location.href = '/login'
+    }
+    
     return Promise.reject(error)
   }
 )

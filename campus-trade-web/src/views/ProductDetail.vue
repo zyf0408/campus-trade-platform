@@ -143,12 +143,16 @@ export default {
     async handleBuy() {
       if (!confirm('确认购买该商品？')) return
       try {
-        await createOrder({ 
+        const res = await createOrder({ 
           productId: this.product.id,
-          price: this.product.price
+          price: Number(this.product.price)
         })
-        alert('下单成功！请前往订单页面付款')
-        this.$router.push('/orders')
+        if (res.code === 200) {
+          alert('下单成功！请前往订单页面付款')
+          this.$router.push('/orders')
+        } else {
+          alert(res.message || '下单失败')
+        }
       } catch (error) {
         console.error('下单失败:', error)
         alert('下单失败，请重试')
@@ -384,14 +388,12 @@ export default {
   margin: 5px 0 0 0;
   font-size: 14px;
 }
-</style>
+
 .loading {
   text-align: center;
   margin: 50px 0;
 }
-</style>
 
-<style>
 .product-detail {
   max-width: 1200px;
   margin: 0 auto;
