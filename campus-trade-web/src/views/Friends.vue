@@ -296,7 +296,14 @@ export default {
         }
       } catch (e) {
         console.error('发送申请失败:', e)
-        alert('发送失败，请重试')
+        if (e.response && e.response.status === 401) {
+          alert('登录已过期，请重新登录')
+          window.location.href = '/login'
+        } else if (e.response && e.response.data && e.response.data.message) {
+          alert(e.response.data.message)
+        } else {
+          alert('发送失败，请重试')
+        }
       } finally {
         adding.value = false
       }

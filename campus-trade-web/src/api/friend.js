@@ -2,8 +2,10 @@ import request from './request.js'
 
 // 发送好友申请
 export function sendFriendRequest(friendId, message) {
-  return request.post('/friend/request', null, {
-    params: { friendId, message }
+  return request({
+    url: '/friend/request',
+    method: 'post',
+    data: { friendId, message }
   })
 }
 

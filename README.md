@@ -111,7 +111,7 @@ cd campus-trade-api
 mvn clean install
 mvn spring-boot:run
 ```
-后端服务默认运行在 `http://localhost:8080`
+后端服务默认运行在 `http://localhost:8081`
 
 ### 4. 启动前端
 ```bash
@@ -119,7 +119,7 @@ cd campus-trade-web
 npm install
 npm run dev
 ```
-前端服务默认运行在 `http://localhost:5173`
+前端服务默认运行在 `http://localhost:3030`
 
 ## 📸 界面预览
 

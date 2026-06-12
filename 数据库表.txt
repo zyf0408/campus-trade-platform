@@ -1,0 +1,68 @@
+数据库表结构清单
+一、核心用户模块（3张表）
+表名	说明	主要字段
+user	用户表	id, username, password, phone, email, avatar, student_no, credit_score, credit_level, auth_status, status
+credit_record	信誉分明细表	id, user_id, order_id, type, score_change, before_score, after_score
+admin	管理员表	id, username, password, real_name, role, campus, status
+二、商品交易模块（4张表）
+表名	说明	主要字段
+category	商品分类表	id, name, parent_id, sort_order, icon, status
+product	商品表	id, user_id, category_id, title, description, price, original_price, condition_level, images, status, view_count, want_count
+purchase_request	求购表	id, user_id, category_id, title, description, budget_min, budget_max, keywords, status, expire_time
+match_record	匹配记录表	id, product_id, purchase_request_id, match_score, seller_notified, buyer_notified
+三、订单交易模块（3张表）
+表名	说明	主要字段
+orders	订单表	id, order_no, product_id, buyer_id, seller_id, purchase_request_id, price, status, is_escrow, pickup_point_id, pickup_code
+review	评价表	id, order_id, reviewer_id, reviewee_id, type, content, is_malicious, appeal_status
+pickup_point	自提点表	id, name, address, longitude, latitude, campus, contact_person, open_time
+四、消息通讯模块（2张表）
+表名	说明	主要字段
+chat_message	聊天消息表	id, conversation_id, sender_id, receiver_id, order_id, content, msg_type, is_read
+notification	通知表	id, user_id, type, title, content, is_read, related_type, related_id
+五、平台管理模块（6张表）
+表名	说明	主要字段
+dispute	维权表	id, order_id, complainant_id, respondent_id, type, description, evidence_images, status, result
+report	举报表	id, reporter_id, target_type, target_id, reason, evidence_images, status, handle_result
+violation_record	违规记录表	id, user_id, type, target_type, target_id, description, penalty, score_deducted
+campus_notice	校园通知表	id, admin_id, title, content, type, is_top, status
+operation_log	操作日志表	id, operator_id, operator_type, module, action, target_type, target_id, detail, ip
+favorite	收藏表	id, user_id, product_id
+六、特色功能模块（2张表）
+表名	说明	主要字段
+textbook	教材信息表	id, isbn, title, author, publisher, edition, course_name, major, grade
+graduation_activity	毕业季活动表	id, user_id, title, description, message, discount_type, discount_value, start_time, end_time
+friendship	好友关系表	id, user_id, friend_id, status, create_time
+
+1.用户相关关系
+主表	关联表	关系类型	关联字段
+user	credit_record	1:N	user.id → credit_record.user_id
+user	product	1:N	user.id → product.user_id
+user	purchase_request	1:N	user.id → purchase_request.user_id
+user	orders (as buyer)	1:N	user.id → orders.buyer_id
+user	orders (as seller)	1:N	user.id → orders.seller_id
+user	chat_message	1:N	user.id → chat_message.sender_id/receiver_id
+user	notification	1:N	user.id → notification.user_id
+user	favorite	1:N	user.id → favorite.user_id
+user	friendship	1:N	user.id → friendship.user_id/friend_id
+2. 商品相关关系
+主表	关联表	关系类型	关联字段
+category	product	1:N	category.id → product.category_id
+category	purchase_request	1:N	category.id → purchase_request.category_id
+product	purchase_request	N:M	match_record (中间表)
+product	orders	1:N	product.id → orders.product_id
+product	favorite	1:N	product.id → favorite.product_id
+3. 订单相关关系
+主表	关联表	关系类型	关联字段
+orders	review	1:N	orders.id → review.order_id
+orders	chat_message	1:N	orders.id → chat_message.order_id
+orders	dispute	1:N	orders.id → dispute.order_id
+orders	credit_record	1:N	orders.id → credit_record.order_id
+pickup_point	orders	1:N	pickup_point.id → orders.pickup_point_id
+4. 平台管理关系
+主表	关联表	关系类型	关联字段
+admin	campus_notice	1:N	admin.id → campus_notice.admin_id
+user	report	1:N	user.id → report.reporter_id
+user	violation_record	1:N	user.id → violation_record.user_id
+user	graduation_activity	1:N	user.id → graduation_activity.user_id
+
+

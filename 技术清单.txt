@@ -1,0 +1,45 @@
+ 校园二手交易平台技术栈清单
+一、后端技术
+技术	版本	作用
+Spring Boot	2.7.18	核心开发框架，提供自动配置、内嵌服务器、快速开发能力
+Spring Web	-	构建RESTful API，处理HTTP请求响应
+Spring Validation	-	参数校验，确保接口数据合法性
+Spring AOP	-	面向切面编程，实现日志、权限等横切关注点
+MyBatis-Plus	3.5.3.1	ORM框架，简化数据库CRUD操作，支持代码生成
+JWT (jjwt)	0.9.1	用户身份认证，生成和验证Token
+Lombok	1.18.40	减少样板代码，自动生成getter/setter等
+Hutool	5.8.18	Java工具类库，提供日期、字符串、加密等工具
+EasyExcel	3.3.2	Excel文件读写，用于数据导入导出
+Maven	-	项目构建和依赖管理工具
+二、前端技术
+技术	版本	作用
+Vue 3	3.5.33	前端渐进式框架，构建用户界面
+Vue Router	5.0.6	前端路由管理，实现单页应用页面切换
+Vite	8.0.10	前端构建工具，提供快速的开发服务器和打包
+Axios	1.15.2	HTTP客户端，与后端API进行数据交互
+SockJS	1.6.1	WebSocket客户端库，提供兼容性支持
+STOMP	7.3.0	简单文本定向消息协议，用于WebSocket消息传输
+三、数据库技术
+技术	版本	作用
+MySQL	8.0	关系型数据库，存储用户、商品、订单等业务数据
+Druid	1.2.16	数据库连接池，提供监控和SQL防注入功能
+Redis	-	缓存数据库，存储会话、热点数据、分布式锁等
+四、中间件与消息队列
+技术	作用
+WebSocket	实时双向通信，实现即时聊天和消息推送
+RabbitMQ	消息队列，处理异步任务、订单超时提醒等
+Elasticsearch	搜索引擎，提供商品全文检索和复杂查询
+五、核心技术应用场景
+功能模块	使用技术	实现方式
+用户认证	JWT + Spring Security	Token生成验证，接口权限控制
+商品搜索	Elasticsearch	全文检索、分词、高亮显示
+即时聊天	WebSocket + STOMP	实时消息推送，私聊功能
+订单超时	RabbitMQ + 定时任务	延迟队列，自动取消超时订单
+数据缓存	Redis	热点数据缓存，提升查询性能
+文件上传	Spring Multipart	商品图片上传，大小限制10MB
+项目架构特点
+前后端分离：后端提供RESTful API，前端Vue3独立部署
+微服务预备：模块化设计，便于后续拆分
+实时通信：WebSocket实现聊天和通知推送
+性能优化：Redis缓存 + Elasticsearch搜索
+异步处理：RabbitMQ处理非实时任务
